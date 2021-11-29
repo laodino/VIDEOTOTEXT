@@ -53,17 +53,20 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     // 添加菜单
-    QMenu *pFile = ui->menuBar->addMenu("选项");
+    QMenu *pFile = ui->menuBar->addMenu("文件");
+    QMenu *pSetting = ui->menuBar->addMenu("设置");
     // 添加菜单项
-    QAction *pStart = pFile->addAction("文件");
-    QAction *pSetting= pFile->addAction("设置");
+    QAction *pStart = pFile->addAction("打开文件");
     QAction *pExit= pFile->addAction("退出");
+
+
+    QAction *pVideosetting= pSetting->addAction("图像设置");
     connect(pStart, &QAction::triggered,this,&MainWindow::openfile);
 
-    connect(pSetting, &QAction::triggered,
+    connect(pVideosetting, &QAction::triggered,
             [_setting] ()
     {
-       _setting->show();
+        _setting->show();
     }
     );
 
@@ -99,7 +102,7 @@ void MainWindow::readsetting(QString settingfilename, QString groupname, QString
 
 void MainWindow::slotExitBtn()
 {
-   // myCamera->stop();
+    // myCamera->stop();
     close();
 }
 
@@ -121,11 +124,28 @@ void MainWindow::openfile()
     // QImage picimage ;
     // picimage.load("D:/122.jpg");
     // grayscaleFast(picimage);
-    QString filepath = QFileDialog::getOpenFileName(this,"打开视频",".","*.mp4");
+    QString filepath = QFileDialog::getOpenFileName(this,"打开视频或图片",".","*.mp4;;*.jpg;;*.png;;*.bmp;;*.tif");
     qDebug()<<"openfile"<<filepath;
-    mediaPlayer->setMedia(QUrl(filepath));
-     qDebug()<<"play";
-    mediaPlayer->play();
+    if(filepath.right(3)=="mp4")
+    {
+        mediaPlayer->setMedia(QUrl(filepath));
+        qDebug()<<"play";
+        mediaPlayer->play();
+    }
+    else
+    {
+        QImage image ;
+        if(image.load(filepath))
+        {
+            image =  Transform2Gray(image);
+            QGraphicsScene *_newscene  = new QGraphicsScene;
+            QGraphicsPixmapItem *_newpixmapitem = new QGraphicsPixmapItem;
+            _newpixmapitem->setPixmap(QPixmap::fromImage(image));
+            _newscene->addItem(_newpixmapitem);
+            ui->graphicsView->setScene(_newscene);
+            ui->graphicsView->show();
+        }
+    }
 
 }
 
@@ -142,7 +162,7 @@ void MainWindow::rcvFrame(QVideoFrame m_currentFrame)
                            framecopy.bytesPerLine(),
                            QVideoFrame::imageFormatFromPixelFormat(framecopy.pixelFormat()));       //这里要做一个copy,因为char* pdata在emit后释放了
         // videoImg = videoImg.mirrored(false, true);                          //水平翻转，原始图片是反的
-         qDebug() <<  "image" << videoImg;  //可以看看输出啥东西
+        qDebug() <<  "image" << videoImg;  //可以看看输出啥东西
         grayscaleFast(videoImg);
         QString currentTime = QDateTime::currentDateTime().toString("yyyyMMddhhmmss");
         // QString savefile = QString("D:/2021-03/%1.jpg").arg(currentTime);
@@ -160,7 +180,7 @@ void MainWindow::grayscaleFast( QImage& image)
     QString imagestring;
     ui->plainTextEdit->clear();
     qDebug()<<"grayscale";
-  //  qDebug()<<image.width()<<image.height();
+    //  qDebug()<<image.width()<<image.height();
     int gray;   //灰度值
     for (int i = 0; i < image.height() / block1; ++i)
     {
@@ -178,12 +198,12 @@ void MainWindow::grayscaleFast( QImage& image)
             gray /= block1 * block1;  //取平均值
             //将灰度值  转换成0~70之间的值  匹配数组中的数字  找到对应字符
             imagestring+= GetCh(70 - gray * 70 / 255);//0~255之间  --->0~70之间的数字
-                   // (gray)>127?"*":" ";
+            // (gray)>127?"*":" ";
         }
         imagestring+="\n";
     }
 
-qDebug()<<"over";
+    qDebug()<<"over";
 
     // printf(imagestring.toLatin1().data());
 
@@ -220,4 +240,116 @@ QImage  MainWindow::stringTopixmap( const QString& pic )
     QDataStream data_stream(&byte_array,QIODevice::ReadOnly);
     data_stream>>pix;
     return pix;
+}
+
+void MainWindow::ImageDeal()
+{
+
+}
+
+int MainWindow::OTSU(QImage image)
+{
+    const int GrayScale = 256;
+    int width = image.width();
+    int height = image.height();
+    int pixsum = width*height;
+    QVector <int> GrayPixCountList(GrayScale);
+    QVector <double> GrayPercentList(GrayScale);
+    int otsunum = 0;
+
+    //灰度数组，数组下表代表灰度值，数组值代表该下表灰度值的数量。比如a[10]=2,代表灰度为10的像素有2个。
+    for(int i =0;i!=width;i++)
+    {
+        for(int j=0;j!=height;j++)
+        {
+            GrayPixCountList[(qGray(image.pixel(i,j)))]++;
+        }
+    }
+    //灰度比例
+    for(int i =0;i!=GrayScale;i++)
+    {
+        GrayPercentList[i] = (double)GrayPixCountList[i]/pixsum;
+    }
+
+    double w0;//背景
+    double u0;//背景平均灰度
+    double w1;//前景
+    double u1;//前景平均灰度
+    double u;//平均灰度
+    double MaxDelta = 0;//最大灰度差
+    double TempDelta;
+    double u0temp;
+    double u1temp;
+
+    //遍历灰度值，计算每个灰度值前景和背景值，求出相差最大的值
+    for(int i =0;i!=GrayScale;i++)
+    {
+        w0=u0=w1=u1=u0temp=u1temp=0;
+
+        //i为当前灰度，j为比较的灰度
+        for(int j=0;j!=GrayScale;j++)
+        {
+            //当前灰度为i,j小于i,i为背景，j大于i，i为前景
+            if(j<=i)
+            {
+                //背景
+                w0+=GrayPercentList[i];
+                u0temp+=i*GrayPercentList[i];
+            }
+            else
+            {
+                //前景
+                w1+=GrayPercentList[i];
+                u1temp+=i*GrayPercentList[i];
+            }
+        }
+        u0 = u0temp/w0;
+        u1 = u1temp/w1;
+        // u = (u0temp+u1temp)/1;
+        u = (u0temp+u1temp);
+        TempDelta = w0*pow((u-u0),2)+w1*pow((u-u1),2);
+        if(TempDelta>MaxDelta)
+        {
+            MaxDelta=TempDelta;
+            otsunum = i;
+        }
+    }
+    return otsunum;
+}
+
+QImage MainWindow::Transform2WB(QImage image)
+{
+    int otsunum =  OTSU(image);
+    int width = image.width();
+    int height=image.height();
+    for(int i=0;i!=width;i++)
+    {
+        for(int j=0;j!=height;j++)
+        {
+            if(qGray(image.pixel(i,j))>otsunum)
+            {
+                image.setPixel(QPoint(i,j),QColor(0,0,0).rgb());
+            }
+            else
+            {
+                image.setPixel(QPoint(i,j),QColor(255, 255, 255).rgb());
+            }
+        }
+    }
+    return image;
+}
+
+QImage MainWindow::Transform2Gray(QImage image)
+{
+    int width  = image.width();
+    int height = image.height();
+    for(int i=0;i!=width;i++)
+    {
+        for(int j=0;j!=height;j++)
+        {
+            int graytemp = qGray(image.pixel(i,j));
+            image.setPixel(QPoint(i,j),QColor(graytemp, graytemp, graytemp).rgb());
+        }
+    }
+    return image;
 }

@@ -78,6 +78,14 @@ private:
     void grayscaleFast(QImage &image);
     QString GetCh(int data);
     QImage stringTopixmap( const QString& pic );
+    //图片处理
+    void ImageDeal();
+    //大津法
+    int OTSU(QImage image);
+    //生成黑白图，二值化
+    QImage Transform2WB(QImage image);
+    //生成灰度图
+    QImage Transform2Gray(QImage image);
 
 
 };

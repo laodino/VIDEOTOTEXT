@@ -26,29 +26,40 @@
     </font>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
-     <layout class="QVBoxLayout" name="verticalLayout">
+    <item row="0" column="1">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QPlainTextEdit" name="plainTextEdit">
-        <property name="font">
-         <font>
-          <family>幼圆</family>
-          <pointsize>10</pointsize>
-          <weight>50</weight>
-          <italic>false</italic>
-          <bold>false</bold>
-         </font>
-        </property>
-        <property name="verticalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="horizontalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="sizeAdjustPolicy">
-         <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
-        </property>
-       </widget>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QPlainTextEdit" name="plainTextEdit">
+          <property name="font">
+           <font>
+            <family>幼圆</family>
+            <pointsize>10</pointsize>
+            <weight>50</weight>
+            <italic>false</italic>
+            <bold>false</bold>
+           </font>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="sizeAdjustPolicy">
+           <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QGraphicsView" name="graphicsView"/>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
@@ -60,7 +71,7 @@
      <x>0</x>
      <y>0</y>
      <width>1366</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
